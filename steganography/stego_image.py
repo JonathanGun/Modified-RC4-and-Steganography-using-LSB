@@ -17,6 +17,16 @@ class Image(Stego):
             raise ValueError('Insufficient bytes, need bigger image / less data')
 
         # TODO
+        n_fill = 0
+        for item in self.image:
+            for pixel in item:
+                i = 0
+                while (n_fill < len(self.secret_bytes)):
+                    lsb = format(pixel[i], "08b")
+                    pixel[i] = int(lsb[-1] + format(self.secret_bytes[n_fill], "08b"), 2)
+                    n_fill += 1
+                    i = (i+1) % 3
+
         return self.image
 
     def _extract(self):
