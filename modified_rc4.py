@@ -9,9 +9,46 @@ class ModifiedRC4:
     def encrypt(self) -> List[int]:
         print("encrypting", self.in_bytes[:10], "using", self.key)
         # TODO
+        S = self.ksa(self.key)
+        i, j = 0, 0
+        ciphertext = []
+        for idx in range(len(self.in_bytes)):
+            i = (i+1) % 256
+            j = (j+S[i]) % 256
+            S = self.swap(S, i, j)
+            t = (S[i] + S[j]) % 256
+            u = S[t]
+            c = u ^ self.in_bytes[idx]
+            ciphertext.append(c)
+        self.in_bytes = ciphertext
         return self.in_bytes
 
     def decrypt(self) -> List[int]:
         print("decrypting", self.in_bytes[:10], "using", self.key)
         # TODO
+        S = self.ksa(self.key)
+        i, j = 0, 0
+        plaintext = []
+        for idx in range(len(self.in_bytes)):
+            i = (i+1) % 256
+            j = (j+S[i]) % 256
+            S = self.swap(S, i, j)
+            t = (S[i] + S[j]) % 256
+            u = S[t]
+            c = u ^ self.in_bytes[idx]
+            plaintext.append(c)
+        self.in_bytes = plaintext
         return self.in_bytes
+
+    def ksa(self, key) -> List[int]:
+        # KSA
+        S = [i for i in range(256)]
+        j = 0
+        for i in range(256):
+            j = (j + S[i] + ord(key[i % len(key)])) % 256
+            S = self.swap(S, i, j) # swap(S[i],S[j])
+        return S
+    
+    def swap(self, list, pos1, pos2) -> List[int]:
+        list[pos1], list[pos2] = list[pos2], list[pos1]
+        return list

@@ -16,7 +16,7 @@ class Image(Stego):
         if len(self.secret_bytes) > max_secret_bytes:
             raise ValueError('Insufficient bytes, need bigger image / less data')
 
-        # TODO
+        # TODO - flag akhir, flag enkripsi pesan, flag acak
         n_fill = 0
         for item in self.image:
             for pixel in item:
