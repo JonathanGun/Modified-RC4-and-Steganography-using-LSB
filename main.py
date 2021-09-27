@@ -1,3 +1,4 @@
+from datetime import datetime
 import os
 import string
 from typing import List
@@ -126,6 +127,8 @@ while event not in (sg.WIN_CLOSED, "Exit"):
     print(event, values)
 
     if event == "run":
+        out_text = ""
+        print("Method:", values["method"])
         if values["method"] == "modified_rc4":
             # Read input
             in_bytes = list(str.encode(values["in_text"]))
@@ -134,9 +137,10 @@ while event not in (sg.WIN_CLOSED, "Exit"):
                 try:
                     in_bytes = load_file(values["in_file"])
                     window["filename"].update(os.path.basename(values["in_file"]) + "." + action[:3])
-                    out_text = ""
                 except Exception as e:
                     debug_text, debug_color = str(e), Config.FAIL_COLOR
+            else:
+                window["filename"].update(datetime.now().strftime("%Y%m%d-%H%M%S") + "." + action[:3])
 
             # Process (decrypt / encrypt)
             out_bytes = getattr(ModifiedRC4(in_bytes, values["cipher_key"]), action)()
@@ -153,6 +157,7 @@ while event not in (sg.WIN_CLOSED, "Exit"):
 
             # Process
             stego_class = Image if values["image"] else Audio if values["audio"] else Video
+            print(stego_class)
             try:
                 stego_object = stego_class(
                     secret_bytes, stego_bytes,
@@ -180,13 +185,13 @@ while event not in (sg.WIN_CLOSED, "Exit"):
         filename = "out/" + values["filename"]
         if values["filename"]:
             try:
-                if values["images"]:
+                if values["image"] and values["method"] != "modified_rc4":
                     cv2.imwrite(filename, out_bytes)
                 else:
                     write_file(filename, bytes(out_bytes))
                 debug_text, debug_color = f"Succesfully saved as {filename}", Config.SUCCESS_COLOR
             except Exception as e:
-                print(str(e))
+                print(e)
                 debug_text, debug_color = f"Failed to save as {filename}", Config.FAIL_COLOR
         else:
             debug_text, debug_color = "Output filename cannot be empty", Config.FAIL_COLOR
@@ -203,6 +208,7 @@ while event not in (sg.WIN_CLOSED, "Exit"):
 
     # Output
     if event == "run" and debug_color == Config.SUCCESS_COLOR:
+        print("out_bytes:", out_bytes)
         window["out_preview_text"].update(out_text)
         window["output"].select()
     window["debug"].update(debug_text)
