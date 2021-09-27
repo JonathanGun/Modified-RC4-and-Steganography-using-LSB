@@ -1,4 +1,5 @@
 import os
+import random
 from typing import List
 from abc import ABC, abstractmethod
 from ciphers.vigenere import ExtendedVigenereCipher
@@ -10,6 +11,7 @@ class Stego(ABC):
     IS_INSERT_RANDOM_BYTE = 1
     LEN_SECRET_FILENAME_BYTE = 2
     SECRET_FILENAME_START_BYTE = 3
+    SENTINEL_CNT = 5
 
     def __init__(
         self,
@@ -26,6 +28,7 @@ class Stego(ABC):
         self.key = key if key else "KRIPTOGRAFI"
         self.is_msg_encrypted = is_msg_encrypted
         self.is_insert_random = is_insert_random
+        random.seed(self.key)
 
     @property
     def secret_header_size(self):
@@ -39,19 +42,47 @@ class Stego(ABC):
     def _extract(self) -> List[int]:
         pass
 
-    @abstractmethod
-    def _extract_meta_data(self):
-        pass
+    def _insert_lsb(self, stego_bytes: List[int], secret_bytes: List[int]) -> List[int]:
+        meta_bytes = self._generate_meta_bytes()
 
-    def _insert_meta_bytes(self):
-        self.secret_bytes = self._generate_meta_bytes() + self.secret_bytes
-        # sentinel
-        self.secret_bytes.extend([ord("#") for _ in range(5)])
+        # Validate enough byte on stego to hide msg
+        if len(stego_bytes) < (len(meta_bytes) + len(secret_bytes)) * 8:
+            raise ValueError('Insufficient bytes, need bigger image / less data')
+
+        # add sentinel chars
+        secret_bytes += [ord("#") for _ in range(5)]
+
+        # shuffle secret bytes if random, sequential if not
+        insert_sequence = list(range(len(stego_bytes)))
+        if self.is_insert_random:
+            random.shuffle(insert_sequence)
+
+        # append metadata
+        secret_bytes = meta_bytes + secret_bytes
+        secret_bytes += stego_bytes[len(secret_bytes):]
+
+        # convert to binary (bits)
+        secret_bin = "".join([format(b, "08b") for b in secret_bytes])
+
+        # insert to lsb
+        for i, seq in enumerate(insert_sequence):
+            stego_bytes[seq] = int(format(stego_bytes[seq], "08b")[:-1] + secret_bin[i], 2)
+        return stego_bytes
+
+    def _extract_lsb(self, stego_bytes: List[int]):
+        insert_sequence = list(range(len(stego_bytes)))
+        if self.is_insert_random:
+            random.shuffle(insert_sequence)
+        extracted_bins = [format(stego_bytes[seq], "08b")[-1] for seq in insert_sequence]
+
+        # group and convert bits to list of bytes (int)
+        extracted_bytes = list(map(lambda x: int(x, 2), ["".join(extracted_bins[i: i + 8]) for i in range(0, len(extracted_bins), 8)]))
+        return extracted_bytes
 
     def _clean_sentinel(self, extracted_bytes: List[int]):
-        for i in range(0, len(extracted_bytes) - 5):
+        for i in range(0, len(extracted_bytes) - self.SENTINEL_CNT):
             if extracted_bytes[i] == ord("#"):
-                if all(el == ord("#") for el in extracted_bytes[i:i + 5]):
+                if all(el == ord("#") for el in extracted_bytes[i:i + self.SENTINEL_CNT]):
                     extracted_bytes = extracted_bytes[:i]
                     break
         return extracted_bytes
@@ -74,7 +105,6 @@ class Stego(ABC):
     def hide(self) -> List[int]:
         if self.is_msg_encrypted:
             self.secret_bytes = ExtendedVigenereCipher(self.secret_bytes, self.key).encrypt()
-        self._insert_meta_bytes()
         self.out_bytes = self._hide()
         return self.out_bytes
 
