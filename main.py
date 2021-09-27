@@ -98,7 +98,7 @@ def load_file(filepath: str) -> List[int]:
     return file_byte
 
 
-def byte_to_str(byte_list):
+def byte_to_str(byte_list: List[int]) -> str:
     printable_chars = set(bytes(string.printable, "ascii"))
     printable = all(char in printable_chars for char in byte_list)
     return "".join(map(chr, byte_list)) if printable else "NOT_TEXT"
@@ -142,50 +142,67 @@ while event not in (sg.WIN_CLOSED, "Exit"):
             else:
                 window["filename"].update(datetime.now().strftime("%Y%m%d-%H%M%S") + "." + action[:3])
 
-            # Process (decrypt / encrypt)
-            out_bytes = getattr(ModifiedRC4(in_bytes, values["cipher_key"]), action)()
-            debug_text, debug_color = f"Succesfully {action}ed!", Config.SUCCESS_COLOR
+            if debug_color != Config.FAIL_COLOR:
+                # Process (decrypt / encrypt)
+                out_bytes = getattr(ModifiedRC4(in_bytes, values["cipher_key"]), action)()
+                debug_text, debug_color = f"Succesfully {action}ed!", Config.SUCCESS_COLOR
 
-            window["out_text"].select()
-            out_text = byte_to_str(out_bytes)
+                window["out_text"].select()
+                out_text = byte_to_str(out_bytes)
         else:
             out_text = "NOT_TEXT"
-            # Read input
-            stego_bytes = load_file(values["stego_file"])
-            secret_bytes = load_file(values["secret_file"])
             action = values["action_stego"].lower()
 
-            # Process
-            stego_class = Image if values["image"] else Audio if values["audio"] else Video
-            print(stego_class)
+            # Read input
             try:
-                stego_object = stego_class(
-                    secret_bytes, stego_bytes,
-                    key=values["cipher_key"],
-                    is_msg_encrypted=values["is_msg_encrypted"],
-                    is_insert_random=values["is_insert_random"],
-                    stego_filepath=values["stego_file"]
-                )
-                out_bytes = getattr(stego_object, action)()
-                if values["image"]:
-                    window["out_preview_image_orig"].update(data=byte_to_img(stego_object.image))
-                    window["out_preview_image_hidden"].update(data=byte_to_img(out_bytes))
-                    window["out_image"].select()
-                    debug_text, debug_color = "Succesfully insert secret file to image", Config.SUCCESS_COLOR
-                if values["audio"]:
-                    window["out_audio"].select()
-                    debug_text, debug_color = "Succesfully insert secret file to audio", Config.SUCCESS_COLOR
-                if values["video"]:
-                    debug_text, debug_color = "Not implemented yet", Config.FAIL_COLOR
+                stego_bytes = load_file(values["stego_file"])
+                secret_bytes = []
+                if action == "hide":
+                    secret_bytes = load_file(values["secret_file"])
             except Exception as e:
-                print(e)
-                debug_text, debug_color = f"Fail to {action}. Reason: {str(e)}", Config.FAIL_COLOR
+                debug_text, debug_color = str(e), Config.FAIL_COLOR
+
+            if debug_color != Config.FAIL_COLOR:
+                # Process
+                stego_class = Image if values["image"] else Audio if values["audio"] else Video
+                print(stego_class)
+                try:
+                    stego_object = stego_class(
+                        secret_bytes, stego_bytes,
+                        key=values["cipher_key"],
+                        is_msg_encrypted=values["is_msg_encrypted"],
+                        is_insert_random=values["is_insert_random"],
+                        stego_filepath=values["stego_file"],
+                        secret_filepath=values["secret_file"],
+                    )
+                    out_bytes = getattr(stego_object, action)()
+                    if action == "hide":
+                        if values["image"]:
+                            window["out_preview_image_orig"].update(data=byte_to_img(stego_object.image))
+                            window["out_preview_image_hidden"].update(data=byte_to_img(out_bytes))
+                            window["out_image"].select()
+                            debug_text, debug_color = "Succesfully insert secret file to image", Config.SUCCESS_COLOR
+                        if values["audio"]:
+                            window["out_audio"].select()
+                            debug_text, debug_color = "Succesfully insert secret file to audio", Config.SUCCESS_COLOR
+                        if values["video"]:
+                            debug_text, debug_color = "Not implemented yet", Config.FAIL_COLOR
+                        outname = list(os.path.splitext(stego_object.stego_filename))
+                        outname.insert(-1, ".hide")
+                        window["filename"].update("".join(outname))
+                    else:
+                        out_text = byte_to_str(out_bytes)
+                        debug_text, debug_color = f"Succesfully extract secret file from {stego_class.__name__.lower()}", Config.SUCCESS_COLOR
+                        window["filename"].update(stego_object.secret_filename)
+                except Exception as e:
+                    print(e)
+                    debug_text, debug_color = f"Fail to {action}. Reason: {str(e)}", Config.FAIL_COLOR
 
     elif event == "export":
         filename = "out/" + values["filename"]
         if values["filename"]:
             try:
-                if values["image"] and values["method"] != "modified_rc4":
+                if values["image"] and values["method"] != "modified_rc4" and action == "hide":
                     cv2.imwrite(filename, out_bytes)
                 else:
                     write_file(filename, bytes(out_bytes))
@@ -208,7 +225,7 @@ while event not in (sg.WIN_CLOSED, "Exit"):
 
     # Output
     if event == "run" and debug_color == Config.SUCCESS_COLOR:
-        print("out_bytes:", out_bytes)
+        print(f"out_bytes: {out_bytes[:3]}... (len: {len(out_bytes)})")
         window["out_preview_text"].update(out_text)
         window["output"].select()
     window["debug"].update(debug_text)
