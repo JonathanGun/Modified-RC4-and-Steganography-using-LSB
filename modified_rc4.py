@@ -1,6 +1,5 @@
 from typing import List
 
-
 class ModifiedRC4:
     def __init__(self, in_bytes: List[int], key: str):
         self.in_bytes = in_bytes if in_bytes else []
@@ -8,7 +7,6 @@ class ModifiedRC4:
 
     def encrypt(self) -> List[int]:
         print("encrypting", self.in_bytes[:10], "using", self.key)
-        # TODO
         S = self.ksa(self.key)
         i, j = 0, 0
         ciphertext = []
@@ -25,7 +23,6 @@ class ModifiedRC4:
 
     def decrypt(self) -> List[int]:
         print("decrypting", self.in_bytes[:10], "using", self.key)
-        # TODO
         S = self.ksa(self.key)
         i, j = 0, 0
         plaintext = []
@@ -45,7 +42,8 @@ class ModifiedRC4:
         S = [i for i in range(256)]
         j = 0
         for i in range(256):
-            j = (j + S[i] + ord(key[i % len(key)])) % 256
+            # Modifikasi pada indeks j pada permutasi
+            j = (ord(key[j % len(key)])*j + ord(key[S[i] % len(key)])*S[i] + ord(key[i % len(key)])) % 256
             S = self.swap(S, i, j)  # swap(S[i],S[j])
         return S
 
