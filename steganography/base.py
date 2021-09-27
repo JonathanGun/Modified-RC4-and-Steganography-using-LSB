@@ -110,7 +110,8 @@ class Stego(ABC):
 
     def extract(self) -> List[int]:
         self.out_bytes = self._extract()
-        self.out_bytes = self._clean_sentinel(self.out_bytes)
+        self._extract_meta_bytes(self.out_bytes)
+        self.out_bytes = self._clean_sentinel(self.out_bytes[self.secret_header_size:])
         if self.is_msg_encrypted:
             self.out_bytes = ExtendedVigenereCipher(self.out_bytes, self.key).decrypt()
         return self.out_bytes

@@ -10,7 +10,6 @@ class Image(Stego):
 
     def _hide(self):
         print("hiding", self.secret_bytes[:10], "using", self.key)
-
         return np.ndarray(
             buffer=np.array(self._insert_lsb(
                 stego_bytes=list(self.image.flatten()),
@@ -22,6 +21,4 @@ class Image(Stego):
 
     def _extract(self):
         print("extracting", self.image[0][:10], "using", self.key)
-        secret_bytes = self._extract_lsb(list(self.image.flatten()))
-        self._extract_meta_bytes(secret_bytes)
-        return secret_bytes[self.secret_header_size:]
+        return self._extract_lsb(list(self.image.flatten()))
