@@ -1,5 +1,6 @@
 from typing import List
 
+
 class ModifiedRC4:
     def __init__(self, in_bytes: List[int], key: str):
         self.in_bytes = in_bytes if in_bytes else []
@@ -43,7 +44,7 @@ class ModifiedRC4:
         j = 0
         for i in range(256):
             # Modifikasi pada indeks j pada permutasi
-            j = (ord(key[j % len(key)])*j + ord(key[S[i] % len(key)])*S[i] + ord(key[i % len(key)])) % 256
+            j = (ord(key[j % len(key)]) * j + ord(key[S[i] % len(key)]) * S[i] + ord(key[i % len(key)])) % 256
             S = self.swap(S, i, j)  # swap(S[i],S[j])
         return S
 
