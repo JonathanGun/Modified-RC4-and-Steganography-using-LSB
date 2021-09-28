@@ -47,38 +47,52 @@ class Stego(ABC):
         meta_bytes = self._generate_meta_bytes()
 
         # Validate enough byte on stego to hide msg
-        if len(stego_bytes) < (len(meta_bytes) + len(secret_bytes)) * 8:
+        # If the stego file type is audio file
+        if (audio_type) and (len(stego_bytes) < (len(meta_bytes) + len(secret_bytes) + 44) * 8):
+            raise ValueError('Insufficient bytes, need bigger audio / less data')
+        elif len(stego_bytes) < (len(meta_bytes) + len(secret_bytes)) * 8:
             raise ValueError('Insufficient bytes, need bigger image / less data')
 
         # add sentinel chars
         secret_bytes += [ord("#") for _ in range(5)]
 
         # shuffle secret bytes if random, sequential if not
-        insert_sequence = list(range(len(stego_bytes)))
+        if (audio_type):
+            insert_sequence = list(range(44, len(stego_bytes)))
+        else:
+            insert_sequence = list(range(len(stego_bytes)))
+            
         if self.is_insert_random:
             random.shuffle(insert_sequence)
 
         # append metadata
         secret_bytes = meta_bytes + secret_bytes
-        secret_bytes += stego_bytes[len(secret_bytes):]
+        if (audio_type):
+            secret_bytes += stego_bytes[len(secret_bytes)+44:]
+        else:
+            secret_bytes += stego_bytes[len(secret_bytes):]
+            
 
         # convert to binary (bits)
         secret_bin = "".join([format(b, "08b") for b in secret_bytes])
 
         # insert to lsb
-        head_start = 0
         if (audio_type):
-            head_start = 44
-            # for i, seq in enumerate(insert_sequence):
-            #     stego_bytes[head_start + seq] = int(format(stego_bytes[head_start + seq], "08b")[:-1] + secret_bin[i], 2)
+            for i, seq in enumerate(insert_sequence):
+                stego_bytes[seq] = int(format(stego_bytes[seq], "08b")[:-1] + secret_bin[i], 2)
             return bytes(stego_bytes)
         else:
             for i, seq in enumerate(insert_sequence):
                 stego_bytes[seq] = int(format(stego_bytes[seq], "08b")[:-1] + secret_bin[i], 2)
             return stego_bytes
 
-    def _extract_lsb(self, stego_bytes: List[int]):
-        insert_sequence = list(range(len(stego_bytes)))
+    def _extract_lsb(self, stego_bytes: List[int], audio_type=False):
+        # If the stego file type is audio file
+        if (audio_type):
+            insert_sequence = list(range(44, len(stego_bytes)))
+        else:
+            insert_sequence = list(range(len(stego_bytes)))
+        
         if self.is_insert_random:
             random.shuffle(insert_sequence)
         extracted_bins = [format(stego_bytes[seq], "08b")[-1] for seq in insert_sequence]
