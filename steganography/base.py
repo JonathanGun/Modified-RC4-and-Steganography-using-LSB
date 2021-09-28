@@ -43,7 +43,7 @@ class Stego(ABC):
     def _extract(self) -> List[int]:
         pass
 
-    def _insert_lsb(self, stego_bytes: List[int], secret_bytes: List[int]) -> List[int]:
+    def _insert_lsb(self, stego_bytes: List[int], secret_bytes: List[int], audio_type=False) -> List[int]:
         meta_bytes = self._generate_meta_bytes()
 
         # Validate enough byte on stego to hide msg
@@ -66,9 +66,16 @@ class Stego(ABC):
         secret_bin = "".join([format(b, "08b") for b in secret_bytes])
 
         # insert to lsb
-        for i, seq in enumerate(insert_sequence):
-            stego_bytes[seq] = int(format(stego_bytes[seq], "08b")[:-1] + secret_bin[i], 2)
-        return stego_bytes
+        head_start = 0
+        if (audio_type):
+            head_start = 44
+            # for i, seq in enumerate(insert_sequence):
+            #     stego_bytes[head_start + seq] = int(format(stego_bytes[head_start + seq], "08b")[:-1] + secret_bin[i], 2)
+            return bytes(stego_bytes)
+        else:
+            for i, seq in enumerate(insert_sequence):
+                stego_bytes[seq] = int(format(stego_bytes[seq], "08b")[:-1] + secret_bin[i], 2)
+            return stego_bytes
 
     def _extract_lsb(self, stego_bytes: List[int]):
         insert_sequence = list(range(len(stego_bytes)))
