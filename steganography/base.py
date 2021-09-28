@@ -3,6 +3,7 @@ import random
 from typing import List
 from abc import ABC, abstractmethod
 from ciphers.vigenere import ExtendedVigenereCipher
+from modified_rc4 import ModifiedRC4
 
 
 class Stego(ABC):
@@ -104,7 +105,7 @@ class Stego(ABC):
 
     def hide(self) -> List[int]:
         if self.is_msg_encrypted:
-            self.secret_bytes = ExtendedVigenereCipher(self.secret_bytes, self.key).encrypt()
+            self.secret_bytes = ModifiedRC4(self.secret_bytes, self.key).encrypt()
         self.out_bytes = self._hide()
         return self.out_bytes
 
@@ -113,5 +114,5 @@ class Stego(ABC):
         self._extract_meta_bytes(self.out_bytes)
         self.out_bytes = self._clean_sentinel(self.out_bytes[self.secret_header_size:])
         if self.is_msg_encrypted:
-            self.out_bytes = ExtendedVigenereCipher(self.out_bytes, self.key).decrypt()
+            self.out_bytes = ModifiedRC4(self.out_bytes, self.key).decrypt()
         return self.out_bytes
