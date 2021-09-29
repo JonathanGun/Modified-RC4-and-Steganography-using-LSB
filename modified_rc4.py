@@ -5,7 +5,7 @@ class ModifiedRC4:
     def __init__(self, in_bytes: List[int], key: str):
         self.in_bytes = in_bytes if in_bytes else []
         self.key = key if key else "KRIPTOGRAFI"
-        self.initstate = [1,0,1] # Inisialisasi register untuk LFSR
+        self.initstate = [1, 0, 1]  # Inisialisasi register untuk LFSR
 
     def encrypt(self) -> List[int]:
         print("encrypting", self.in_bytes[:10], "using", self.key)
@@ -65,7 +65,7 @@ class ModifiedRC4:
         '''
         register = self.initstate
         out_bit = []
-        for _ in range(pow(len(self.initstate),2)):
+        for _ in range(pow(len(self.initstate), 2)):
             xor = register[1]
             for bit in register[2:]:
                 xor ^= bit
