@@ -12,6 +12,7 @@ from steganography.stego_audio import Audio
 from steganography.stego_video import Video
 
 from helpers import audio
+import wave
 
 
 class Config:
@@ -190,6 +191,10 @@ while event not in (sg.WIN_CLOSED, "Exit"):
                         outname = list(os.path.splitext(stego_object.stego_filename))
                         outname.insert(-1, ".hide")
                         window["filename"].update("".join(outname))
+                        if values["audio"]:
+                            filename = "out/" + "".join(outname)
+                            stego_object.stego_out_filepath = filename
+                            write_file(filename, bytes(out_bytes))
                     else:
                         out_text = byte_to_str(out_bytes)
                         debug_text, debug_color = f"Succesfully extract secret file from {stego_class.__name__.lower()}", Config.SUCCESS_COLOR
@@ -213,12 +218,16 @@ while event not in (sg.WIN_CLOSED, "Exit"):
         else:
             debug_text, debug_color = "Output filename cannot be empty", Config.FAIL_COLOR
     elif event == "listen_orig" and values["audio"] and stego_object is not None:
-        audio.listen(stego_object.audio, "orig")
+        original_audio = wave.open(stego_object.stego_filepath, 'rb')
+        audio.listen(original_audio, "orig")
+        # audio.play_song(stego_object.audio, "orig")
     elif event == "stop_orig" and values["audio"]:
         audio.stop("orig")
         window["audio_prog_orig"].update(0)
     elif event == "listen_hidden" and values["audio"]:
-        audio.listen(out_bytes, "hidden")
+        hidden_audio = wave.open(stego_object.stego_out_filepath, 'rb')
+        audio.listen(hidden_audio, "hidden")
+        # audio.play_song(out_bytes, "hidden")
     elif event == "stop_hidden" and values["audio"]:
         audio.stop("hidden")
         window["audio_prog_hidden"].update(0)

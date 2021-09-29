@@ -5,6 +5,7 @@ from steganography.base import Stego
 class Audio(Stego):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        self.stego_out_filepath = "out"
         with open(self.stego_filepath, 'rb') as fd:
             self.audio = fd.read()
 
