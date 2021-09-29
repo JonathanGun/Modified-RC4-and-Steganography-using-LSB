@@ -10,7 +10,7 @@ python -m pip install -r requirements.txt
 
 ### Windows
 ```bash
-virtualenv -p python3 venv
+python -m virtualenv -p python venv
 venv\Scripts\activate
 python -m pip install -r requirements.txt
 ```

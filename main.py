@@ -187,7 +187,7 @@ while event not in (sg.WIN_CLOSED, "Exit"):
                             window["out_audio"].select()
                             debug_text, debug_color = "Succesfully insert secret file to audio", Config.SUCCESS_COLOR
                         if values["video"]:
-                            debug_text, debug_color = "Not implemented yet", Config.FAIL_COLOR
+                            debug_text, debug_color = "Succesfully insert secret file to video", Config.SUCCESS_COLOR
                         outname = list(os.path.splitext(stego_object.stego_filename))
                         outname.insert(-1, ".hide")
                         window["filename"].update("".join(outname))
