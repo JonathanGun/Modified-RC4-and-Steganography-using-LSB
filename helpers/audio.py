@@ -1,4 +1,3 @@
-import io
 import pyaudio
 
 CHUNK = 1024  # Samples: 1024,  512, 256, 128
@@ -26,6 +25,7 @@ def stop(channel: str):
         streams[channel].stop_stream()
         streams[channel].close()
         streams[channel] = False
+
 
 def listen(wave_file, channel: str):
     global cur_wave_file

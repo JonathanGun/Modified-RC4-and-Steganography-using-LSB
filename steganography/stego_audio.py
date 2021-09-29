@@ -1,5 +1,6 @@
 from steganography.base import Stego
 from scipy.io import wavfile
+import numpy as np
 import math
 
 
@@ -28,7 +29,7 @@ class Audio(Stego):
         _, data_stego = wavfile.read(self.stego_out_filepath)
         P0 = np.mean(np.abs(data_original))
         P1 = np.mean(np.abs(data_stego))
-        PSNR = 10 * math.log10(P1**2 / (P1**2 + P0**2 - 2*P1*P0))
+        PSNR = 10 * math.log10(P1**2 / (P1**2 + P0**2 - 2 * P1 * P0))
         output_text = "P0 = {:.3f}\n".format(P0)
         output_text += "P1 = {:.3f}\n".format(P1)
         output_text += "Fidelity = {:.3f}".format(PSNR)
