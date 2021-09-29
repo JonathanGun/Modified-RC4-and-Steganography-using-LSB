@@ -27,6 +27,15 @@ def stop(channel: str):
         streams[channel].close()
         streams[channel] = False
 
+<<<<<<< HEAD
+=======
+
+def play_song(data, channel: str):
+    song = AudioSegment.from_file(io.BytesIO(data), format="wav")
+    play(song)
+
+
+>>>>>>> d84c596eb806824092f46787d4f3bbf5839a2b8d
 def listen(wave_file, channel: str):
     global cur_wave_file
     for k in streams.keys():
