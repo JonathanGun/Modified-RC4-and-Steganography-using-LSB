@@ -195,6 +195,7 @@ while event not in (sg.WIN_CLOSED, "Exit"):
                             filename = "out/" + "".join(outname)
                             stego_object.stego_out_filepath = filename
                             write_file(filename, bytes(out_bytes))
+                            window["fidelity"].update(stego_object.calculate_psnr())
                     else:
                         out_text = byte_to_str(out_bytes)
                         debug_text, debug_color = f"Succesfully extract secret file from {stego_class.__name__.lower()}", Config.SUCCESS_COLOR

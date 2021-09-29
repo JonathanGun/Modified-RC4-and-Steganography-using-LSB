@@ -1,8 +1,5 @@
-from pydub import AudioSegment
-from pydub.playback import play
 import io
 import pyaudio
-# import numpy as np
 
 CHUNK = 1024  # Samples: 1024,  512, 256, 128
 RATE = 44100  # Equivalent to Human Hearing at 40 kHz
@@ -29,10 +26,6 @@ def stop(channel: str):
         streams[channel].stop_stream()
         streams[channel].close()
         streams[channel] = False
-
-def play_song(data, channel: str):
-    song = AudioSegment.from_file(io.BytesIO(data), format="wav")
-    play(song)
 
 def listen(wave_file, channel: str):
     global cur_wave_file
