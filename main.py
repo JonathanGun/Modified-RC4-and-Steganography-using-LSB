@@ -183,6 +183,7 @@ while event not in (sg.WIN_CLOSED, "Exit"):
                             window["out_preview_image_hidden"].update(data=byte_to_img(out_bytes))
                             window["out_image"].select()
                             debug_text, debug_color = "Succesfully insert secret file to image", Config.SUCCESS_COLOR
+                            window["psnr"].update(stego_object.calculate_psnr(stego_object.image, out_bytes))
                         if values["audio"]:
                             window["out_audio"].select()
                             debug_text, debug_color = "Succesfully insert secret file to audio", Config.SUCCESS_COLOR
@@ -235,7 +236,7 @@ while event not in (sg.WIN_CLOSED, "Exit"):
 
     # Output
     if event == "run" and debug_color == Config.SUCCESS_COLOR:
-        print(f"out_bytes: {out_bytes[:3]}... (len: {len(out_bytes)})")
+        #print(f"out_bytes: {out_bytes[:3]}... (len: {len(out_bytes)})")
         window["out_preview_text"].update(out_text)
         window["output"].select()
     window["debug"].update(debug_text)
