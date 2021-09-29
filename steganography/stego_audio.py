@@ -19,4 +19,6 @@ class Audio(Stego):
 
     def _extract(self):
         print("extracting", self.audio[self.EXTRA_META_BYTES:64], "using", self.key)
-        return self._extract_lsb(stego_bytes=list(self.audio), audio_type=True)
+        return self._extract_lsb(
+            stego_bytes=list(self.audio)
+        )

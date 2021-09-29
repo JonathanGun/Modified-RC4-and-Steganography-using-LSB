@@ -47,7 +47,6 @@ class Stego(ABC):
         meta_bytes = self._generate_meta_bytes()
 
         # Validate enough byte on stego to hide msg
-        # If the stego file type is audio file
         if len(stego_bytes) < (len(meta_bytes) + len(secret_bytes) + self.EXTRA_META_BYTES) * 8:
             raise ValueError('Insufficient bytes, need bigger audio / less data')
 
@@ -71,13 +70,8 @@ class Stego(ABC):
             stego_bytes[seq] = int(format(stego_bytes[seq], "08b")[:-1] + secret_bin[i], 2)
         return stego_bytes
 
-    def _extract_lsb(self, stego_bytes: List[int], audio_type=False):
-        # If the stego file type is audio file
-        if (audio_type):
-            insert_sequence = list(range(44, len(stego_bytes)))
-        else:
-            insert_sequence = list(range(len(stego_bytes)))
-
+    def _extract_lsb(self, stego_bytes: List[int]):
+        insert_sequence = list(range(self.EXTRA_META_BYTES, len(stego_bytes)))
         if self.is_insert_random:
             random.shuffle(insert_sequence)
         extracted_bins = [format(stego_bytes[seq], "08b")[-1] for seq in insert_sequence]
