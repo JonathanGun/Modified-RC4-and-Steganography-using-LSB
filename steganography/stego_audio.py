@@ -22,7 +22,7 @@ class Audio(Stego):
 
     def _extract(self):
         print("extracting", self.audio[44:64], "using", self.key)
-        return self._extract_lsb(stego_bytes=list(self.audio), audio_type=True)
+        return self._extract_lsb(stego_bytes=list(self.audio))
 
     def calculate_psnr(self):
         _, data_original = wavfile.read(self.stego_filepath)
