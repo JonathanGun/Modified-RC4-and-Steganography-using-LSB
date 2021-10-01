@@ -236,7 +236,7 @@ while event not in (sg.WIN_CLOSED, "Exit"):
 
     # Output
     if event == "run" and debug_color == Config.SUCCESS_COLOR:
-        #print(f"out_bytes: {out_bytes[:3]}... (len: {len(out_bytes)})")
+        # print(f"out_bytes: {out_bytes[:3]}... (len: {len(out_bytes)})")
         window["out_preview_text"].update(out_text)
         window["output"].select()
     window["debug"].update(debug_text)

@@ -54,9 +54,11 @@ class Stego(ABC):
         secret_bytes += [ord("#") for _ in range(5)]
 
         # shuffle secret bytes if random, sequential if not
-        insert_sequence = list(range(self.EXTRA_META_BYTES, len(stego_bytes)))
+        insert_sequence = list(range((self.EXTRA_META_BYTES + self.secret_header_size) * 8, len(stego_bytes)))
         if self.is_insert_random:
             random.shuffle(insert_sequence)
+        insert_sequence = [i for i in range(self.EXTRA_META_BYTES * 8, (self.EXTRA_META_BYTES + self.secret_header_size) * 8)] + insert_sequence
+        print("inserted at positions:", insert_sequence[:30 * 8])
 
         # append metadata
         secret_bytes = meta_bytes + secret_bytes
@@ -70,14 +72,32 @@ class Stego(ABC):
             stego_bytes[seq] = int(format(stego_bytes[seq], "08b")[:-1] + secret_bin[i], 2)
         return stego_bytes
 
-    def _extract_lsb(self, stego_bytes: List[int]):
-        insert_sequence = list(range(self.EXTRA_META_BYTES, len(stego_bytes)))
-        if self.is_insert_random:
-            random.shuffle(insert_sequence)
-        extracted_bins = [format(stego_bytes[seq], "08b")[-1] for seq in insert_sequence]
+    def _extract_lsb_helper(self, stego_bytes: List[int], positions: List[int]) -> List[int]:
+        """
+        only extract lsb on position's index, returns in bytes form (group of 8 bits)
+        """
+        extracted_bins = [format(stego_bytes[seq], "08b")[-1] for seq in positions]
 
         # group and convert bits to list of bytes (int)
         extracted_bytes = list(map(lambda x: int(x, 2), ["".join(extracted_bins[i: i + 8]) for i in range(0, len(extracted_bins), 8)]))
+        return extracted_bytes
+
+    def _extract_lsb(self, stego_bytes: List[int]):
+        # extract meta bytes
+        insert_sequence = [i for i in range(self.EXTRA_META_BYTES * 8, (self.EXTRA_META_BYTES + self.LEN_META_METABYTE) * 8)]
+        meta_bytes = self._extract_lsb_helper(stego_bytes, insert_sequence)
+
+        # extract filename
+        filename_sequence = [i for i in range((self.EXTRA_META_BYTES + self.LEN_SECRET_FILENAME_BYTE + 1) * 8, (self.EXTRA_META_BYTES + self.LEN_SECRET_FILENAME_BYTE + meta_bytes[self.LEN_SECRET_FILENAME_BYTE] + 1) * 8)]
+        meta_bytes += self._extract_lsb_helper(stego_bytes, filename_sequence)
+        print("extracted from positions:", insert_sequence + filename_sequence)
+
+        # extract content
+        self._extract_meta_bytes(meta_bytes)
+        insert_sequence = list(range((self.EXTRA_META_BYTES + self.secret_header_size) * 8, len(stego_bytes)))
+        if self.is_insert_random:
+            random.shuffle(insert_sequence)
+        extracted_bytes = self._extract_lsb_helper(stego_bytes, insert_sequence)
         return extracted_bytes
 
     def _clean_sentinel(self, extracted_bytes: List[int]):
@@ -89,11 +109,13 @@ class Stego(ABC):
         return extracted_bytes
 
     def _generate_meta_bytes(self) -> List[int]:
-        meta_bytes = []
-        meta_bytes.append(int(self.is_msg_encrypted))
-        meta_bytes.append(int(self.is_insert_random))
-        meta_bytes.append(len(self.secret_filename))
-        meta_bytes.extend(ord(s) for s in self.secret_filename)
+        meta_bytes = [0 for _ in range(self.secret_header_size)]
+        meta_bytes[self.IS_MSG_ENCRYPTED_BYTE] = int(self.is_msg_encrypted)
+        meta_bytes[self.IS_INSERT_RANDOM_BYTE] = int(self.is_insert_random)
+        meta_bytes[self.LEN_SECRET_FILENAME_BYTE] = len(self.secret_filename)
+        meta_bytes[self.LEN_META_METABYTE:self.secret_header_size] = [ord(s) for s in self.secret_filename]
+        print("meta bytes:", meta_bytes)
+        print("generated meta:", self.is_msg_encrypted, self.is_insert_random, len(self.secret_filename), self.secret_filename)
         return meta_bytes
 
     def _extract_meta_bytes(self, meta_bytes: List[int]):
@@ -101,7 +123,8 @@ class Stego(ABC):
         self.is_insert_random = meta_bytes[self.IS_INSERT_RANDOM_BYTE]
         secret_filename_bytes = meta_bytes[self.SECRET_FILENAME_START_BYTE: self.SECRET_FILENAME_START_BYTE + meta_bytes[self.LEN_SECRET_FILENAME_BYTE]]
         self.secret_filename = "".join([chr(i) for i in secret_filename_bytes])
-        print("extracted meta:", self.is_msg_encrypted, self.is_insert_random, self.secret_filename)
+        print("meta bytes:", meta_bytes[:self.secret_header_size])
+        print("extracted meta:", self.is_msg_encrypted, self.is_insert_random, len(self.secret_filename), self.secret_filename)
 
     def hide(self) -> List[int]:
         if self.is_msg_encrypted:
@@ -111,8 +134,8 @@ class Stego(ABC):
 
     def extract(self) -> List[int]:
         self.out_bytes = self._extract()
-        self._extract_meta_bytes(self.out_bytes)
-        self.out_bytes = self._clean_sentinel(self.out_bytes[self.secret_header_size:])
+        self.out_bytes = self._clean_sentinel(self.out_bytes)
         if self.is_msg_encrypted:
             self.out_bytes = ModifiedRC4(self.out_bytes, self.key).decrypt()
+        print("extracted final:", self.out_bytes[:20])
         return self.out_bytes
